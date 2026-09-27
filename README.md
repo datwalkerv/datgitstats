@@ -1,36 +1,77 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# datgitstats
 
-## Getting Started
+A self-hostable replacement for **GitHub Readme Stats**, **Top Languages** and **GitHub Streak Stats**, in one Next.js app.
+You enter a username, customize each card with a live preview, and paste a permanent URL into your README.
 
-First, run the development server:
+The app fetches GitHub data and renders the SVG cards itself. It does not proxy the existing services.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+```md
+![GitHub Stats](https://your-domain.com/api/stats?username=octocat&theme=dracula)
+![Top Languages](https://your-domain.com/api/top-langs?username=octocat&layout=donut)
+![GitHub Streak](https://your-domain.com/api/streak?username=octocat&theme=nord)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Features
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Three generators:** stats (with rank), top languages (5 layouts) and contribution streaks (daily or weekly, with an optional heat strip).
+- **26 built-in themes**, per-color overrides and custom themes saved in `localStorage`.
+- **Every option is a URL parameter.** The generator's share link (`/generate?username=…&type=…`) restores the full configuration of all three cards.
+- **Pixel-identical live preview.** The browser runs the same pure SVG renderer as the API.
+- **Never a broken image.** Every failure returns a themed error SVG with HTTP 200 and a short cache time.
+- **Built for README traffic:** in-flight request deduplication, an in-memory LRU with stale-on-error, the Next.js data cache (shared across serverless instances) and CDN-friendly `Cache-Control` headers.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## API
 
-## Learn More
+| Endpoint | Returns |
+| --- | --- |
+| `GET /api/stats?username=` | Stats card SVG |
+| `GET /api/top-langs?username=` | Top languages SVG |
+| `GET /api/streak?username=` | Streak SVG |
+| `GET /api/data?username=` | JSON bundle used by the generator UI |
+| `GET /api/demo?card=stats\|top-langs\|streak` | Sample card rendered from demo data |
 
-To learn more about Next.js, take a look at the following resources:
+The homepage has the full parameter reference, generated from the same schemas the API uses (`lib/config/*`).
+Invalid parameter values fall back to their defaults.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Development
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+pnpm install
+cp .env.example .env.local   # optional: add GITHUB_TOKEN
+pnpm dev
+pnpm test                    # vitest: streaks, languages, config round-trips, SVG output
+pnpm typecheck && pnpm lint
+```
 
-## Deploy on Vercel
+## Deploying to Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. Import the repository in Vercel. No build settings are needed.
+2. Optional: set `GITHUB_TOKEN`. A token without scopes is enough for public data.
+3. Optional: set `NEXT_PUBLIC_SITE_URL` if you serve the app from a custom domain.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## How data is fetched
+
+`lib/github/` hides where the data comes from:
+
+| Data | With `GITHUB_TOKEN` | Without a token |
+| --- | --- | --- |
+| Profile, counts | One GraphQL query | REST `/users/:u` + Search API |
+| Repositories and languages | GraphQL, exact bytes per language | REST repos; repo size assigned to the primary language (approximate) |
+| Contribution calendar | One aliased GraphQL query per 4 years | Public `github.com/users/:u/contributions` HTML |
+
+`getContributionData(username)` is the single entry point for the contribution calendar, so you can swap its implementation without touching the cards.
+If a token is rejected or rate-limited, requests fall back to the public implementation.
+
+## Project structure
+
+```
+app/            pages (/, /generate) and route handlers (/api/*)
+components/     generator UI, home sections, theme gallery, shadcn/ui primitives
+lib/config/     URL parameter schemas (parse, encode, docs)
+lib/generators/ pure SVG renderers (server + browser)
+lib/github/     GitHub data access (GraphQL / REST / HTML), errors, token rotation
+lib/cache/      dedup + LRU + Next data cache, HTTP cache headers
+lib/themes/     built-in themes
+lib/utils/      streak math, language aggregation, rank, dates, formatting
+tests/          vitest
+```
