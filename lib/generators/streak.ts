@@ -137,7 +137,8 @@ export function renderStreakCard(d: StreakCardData, o: StreakOptions): string {
   const empty = !sections.length
     ? `<text class="muted" x="${pad}" y="${top + fs * 2}">All sections hidden.</text>`
     : "";
-  const height = o.height || Math.round(top + bodyH + graphH + pad - 6);
+  const naturalHeight = Math.round(top + bodyH + graphH + pad - 6);
+  const height = o.height || naturalHeight;
   const name = d.name || d.login;
   const desc = sections.map((sec) => `${sec.label}: ${sec.value} (${sec.sub})`).join(", ");
   return frame({
@@ -147,5 +148,6 @@ export function renderStreakCard(d: StreakCardData, o: StreakOptions): string {
     title: `${name}'s GitHub Streak`,
     desc: desc || "GitHub streak",
     body: cols + graph + empty,
+    contentHeight: naturalHeight,
   });
 }

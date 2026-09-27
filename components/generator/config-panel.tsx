@@ -205,6 +205,15 @@ function TopLangsContent({
           on the server for exact per-language sizes.
         </p>
       ) : null}
+      <Segmented
+        label="Language colors"
+        value={o.lang_colors}
+        options={[
+          { value: "theme", label: "Match theme" },
+          { value: "language", label: "GitHub colors" },
+        ]}
+        onValueChange={(v) => onChange({ lang_colors: v })}
+      />
       <div className="grid gap-1">
         <SwitchRow label="Show percentages" checked={o.show_percent} onCheckedChange={(v) => onChange({ show_percent: v })} />
         <SwitchRow label="Group rest as “Other”" checked={o.show_other} onCheckedChange={(v) => onChange({ show_other: v })} />

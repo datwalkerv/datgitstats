@@ -73,9 +73,13 @@ export function renderStatsCard(d: StatsCardData, o: StatsOptions): string {
   const longestLabel = o.hide_labels ? 0 : Math.max(0, ...rows.map((row) => row.label.length));
   const autoWidth =
     pad * 2 + labelCol + longestLabel * fs * ctx.charW + 70 + (showRank ? ringR * 2 + 36 : 0);
-  const width = o.width || Math.max(o.hide_labels ? 260 : 360, Math.round(autoWidth));
+  const naturalWidth = Math.max(o.hide_labels ? 260 : 360, Math.round(autoWidth));
+  const cardWidth = o.width || naturalWidth;
+  // Lay out at the natural width and let the frame center it in wider cards.
+  const width = Math.min(cardWidth, naturalWidth);
   const contentH = Math.max(listH, ringBox);
-  const height = o.height || Math.round(pad + titleH + contentH + pad - 4);
+  const naturalHeight = Math.round(pad + titleH + contentH + pad - 4);
+  const height = o.height || naturalHeight;
 
   const listTop = pad + titleH;
   const valueX = width - pad - (showRank ? ringR * 2 + 36 : 0);
@@ -138,5 +142,16 @@ export function renderStatsCard(d: StatsCardData, o: StatsOptions): string {
   }
 
   const desc = rows.map((row) => `${row.label}: ${row.value}`).join(", ") + (showRank ? `. Rank ${rank.level}` : "");
-  return frame({ ctx, width, height, title, desc, body: rowsSvg + "\n" + ring, titleMarkup, css });
+  return frame({
+    ctx,
+    width: cardWidth,
+    height,
+    title,
+    desc,
+    body: rowsSvg + "\n" + ring,
+    titleMarkup,
+    css,
+    contentWidth: width,
+    contentHeight: naturalHeight,
+  });
 }

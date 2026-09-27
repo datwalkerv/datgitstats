@@ -1,5 +1,6 @@
 import type { TopLangsOptions } from "@/lib/config";
 import type { RepoInfo } from "@/types/github";
+import { seriesColor, type CardTheme } from "@/lib/themes";
 import { formatPercent } from "@/lib/utils/format";
 import { computeTopLanguages, type LanguageStat } from "@/lib/utils/languages";
 import { delay, escapeXml, frame, makeCtx, r, titleHeight, truncate, type Ctx } from "./primitives";
@@ -9,8 +10,8 @@ export interface TopLangsCardData {
   approximate?: boolean;
 }
 
-export function topLanguagesFor(d: TopLangsCardData, o: TopLangsOptions): LanguageStat[] {
-  return computeTopLanguages(d.repos, {
+export function topLanguagesFor(d: TopLangsCardData, o: TopLangsOptions, theme?: CardTheme): LanguageStat[] {
+  const langs = computeTopLanguages(d.repos, {
     method: o.method,
     sizeWeight: o.size_weight,
     countWeight: o.count_weight,
@@ -21,6 +22,9 @@ export function topLanguagesFor(d: TopLangsCardData, o: TopLangsOptions): Langua
     count: o.langs_count,
     showOther: o.show_other,
   });
+  if (o.lang_colors !== "theme" || !theme) return langs;
+  // Color by rank from the theme palette; the "Other" bucket stays neutral.
+  return langs.map((l, i) => ({ ...l, color: l.name === "Other" && o.show_other ? theme.muted : seriesColor(theme, i) }));
 }
 
 interface Layout {
@@ -48,7 +52,7 @@ function bars(ctx: Ctx, o: TopLangsOptions, langs: LanguageStat[], top: number):
 </g>`;
     })
     .join("\n");
-  return { width, height: o.height || Math.round(top + langs.length * rowH + pad - fs * 0.4), body };
+  return { width, height: Math.round(top + langs.length * rowH + pad - fs * 0.4), body };
 }
 
 function percentBars(ctx: Ctx, o: TopLangsOptions, langs: LanguageStat[], top: number): Layout {
@@ -65,14 +69,14 @@ function percentBars(ctx: Ctx, o: TopLangsOptions, langs: LanguageStat[], top: n
       const w = Math.max(2, (barW * l.percent) / 100);
       return `<g class="fade"${delay(ctx, i, 60)}>
   <circle cx="${pad + 5}" cy="${r(y)}" r="5" fill="${l.color}"/>
-  <text class="label" x="${pad + 16}" y="${r(y + fs * 0.35)}">${escapeXml(truncate(ctx, l.name, nameW - 20))}</text>
+  <text class="label" x="${pad + 16}" y="${r(y + fs * 0.35)}">${escapeXml(truncate(ctx, l.name, nameW - 12))}</text>
   <rect x="${r(barX)}" y="${r(y - 3)}" width="${r(barW)}" height="6" rx="3" fill="${theme.muted}" fill-opacity="0.14"/>
   <rect class="grow"${delay(ctx, i, 60, 250)} x="${r(barX)}" y="${r(y - 3)}" width="${r(w)}" height="6" rx="3" fill="${l.color}"/>
   ${o.show_percent ? `<text class="value" x="${width - pad}" y="${r(y + fs * 0.35)}" text-anchor="end">${pct(o, l)}</text>` : ""}
 </g>`;
     })
     .join("\n");
-  return { width, height: o.height || Math.round(top + langs.length * rowH + pad - 6), body };
+  return { width, height: Math.round(top + langs.length * rowH + pad - 6), body };
 }
 
 function compact(ctx: Ctx, o: TopLangsOptions, langs: LanguageStat[], top: number): Layout {
@@ -111,7 +115,7 @@ function compact(ctx: Ctx, o: TopLangsOptions, langs: LanguageStat[], top: numbe
   const body = `<clipPath id="${clipId}"><rect x="${pad}" y="${top}" width="${barW}" height="8" rx="4"/></clipPath>
 <g class="grow" clip-path="url(#${clipId})">${segs}</g>
 ${legend}`;
-  return { width, height: o.height || Math.round(legendTop + (rows - 1) * rowH + pad + 2), body };
+  return { width, height: Math.round(legendTop + (rows - 1) * rowH + pad + 2), body };
 }
 
 function circular(ctx: Ctx, o: TopLangsOptions, langs: LanguageStat[], top: number, pie: boolean): Layout {
@@ -121,9 +125,11 @@ function circular(ctx: Ctx, o: TopLangsOptions, langs: LanguageStat[], top: numb
   const radius = Math.max(44, Math.min(70, legendH / 2 + 8));
   const longest = Math.max(...langs.map((l) => l.name.length), 6);
   const legendW = 16 + longest * fs * ctx.charW + (o.show_percent ? 64 : 8);
-  const width = o.width || Math.round(pad * 2 + legendW + 28 + radius * 2);
+  // Chart layouts keep their natural width and get centered in wider cards.
+  const natural = Math.round(pad * 2 + legendW + 28 + radius * 2);
+  const width = o.width ? Math.min(o.width, natural) : natural;
   const contentH = Math.max(legendH, radius * 2);
-  const height = o.height || Math.round(top + contentH + pad - 4);
+  const height = Math.round(top + contentH + pad - 4);
   const cx = width - pad - radius;
   const cy = top + contentH / 2 - 2;
 
@@ -165,14 +171,15 @@ function circular(ctx: Ctx, o: TopLangsOptions, langs: LanguageStat[], top: numb
 
 export function renderTopLangsCard(d: TopLangsCardData, o: TopLangsOptions): string {
   const ctx = makeCtx(o);
-  const langs = topLanguagesFor(d, o);
+  const langs = topLanguagesFor(d, o, ctx.theme);
   const top = ctx.pad + titleHeight(ctx);
   const title = "Most Used Languages";
 
   if (!langs.length) {
     const width = o.width || 350;
+    const natural = top + ctx.fs + ctx.pad + 8;
     const body = `<text class="muted fade" x="${ctx.pad}" y="${top + ctx.fs}">No language data available.</text>`;
-    return frame({ ctx, width, height: o.height || top + ctx.fs + ctx.pad + 8, title, desc: "No language data", body });
+    return frame({ ctx, width, height: o.height || natural, title, desc: "No language data", body, contentHeight: natural });
   }
 
   const layout =
@@ -187,5 +194,14 @@ export function renderTopLangsCard(d: TopLangsCardData, o: TopLangsOptions): str
             : bars(ctx, o, langs, top);
 
   const desc = langs.map((l) => `${l.name} ${formatPercent(l.percent)}`).join(", ");
-  return frame({ ctx, width: layout.width, height: layout.height, title, desc, body: layout.body });
+  return frame({
+    ctx,
+    width: o.width || layout.width,
+    height: o.height || layout.height,
+    title,
+    desc,
+    body: layout.body,
+    contentWidth: layout.width,
+    contentHeight: layout.height,
+  });
 }

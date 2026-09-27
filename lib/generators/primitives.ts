@@ -27,6 +27,10 @@ export function resolveTheme(o: CommonOptions): CardTheme {
     ring: o.ring_color ?? o.accent_color ?? base.ring,
     muted: o.muted_color ?? base.muted,
     contrib: (o.contrib_colors as CardTheme["contrib"] | undefined) ?? base.contrib,
+    // A custom accent leads the series palette so charts follow the user's colors.
+    palette: o.accent_color
+      ? [o.accent_color, ...base.palette.filter((c) => c.toLowerCase() !== o.accent_color)]
+      : base.palette,
   };
 }
 
@@ -88,22 +92,33 @@ export interface FrameInput {
   css?: string;
   /** Replace the default title row (e.g. to add an avatar). */
   titleMarkup?: string;
+  /**
+   * Natural size of the laid-out content (padding included). When the card is larger,
+   * the content is centered inside it; when smaller, it stays anchored top-left.
+   */
+  contentWidth?: number;
+  contentHeight?: number;
 }
 
 export function titleHeight(ctx: Ctx): number {
   return ctx.o.hide_title ? 0 : Math.round(ctx.fs * 1.3 + ctx.fs * 1.3);
 }
 
-export function frame({ ctx, width, height, title, desc, body, css = "", titleMarkup }: FrameInput): string {
+export function frame({
+  ctx, width, height, title, desc, body, css = "", titleMarkup, contentWidth, contentHeight,
+}: FrameInput): string {
   const { theme, o, font, fs, pad } = ctx;
   const w = Math.round(width);
   const h = Math.round(height);
+  const cw = Math.min(w, contentWidth ?? w);
+  const dx = Math.max(0, (w - cw) / 2);
+  const dy = Math.max(0, (h - (contentHeight ?? h)) / 2);
   const radius = Math.min(o.border_radius, h / 2, w / 2);
   const shownTitle = o.custom_title ?? title ?? "";
   const titleText = o.hide_title
     ? ""
     : titleMarkup ??
-      `<text class="title fade" x="${pad}" y="${pad + fs * 1.3 * 0.8}">${escapeXml(truncate(ctx, shownTitle, w - pad * 2, fs * 1.3, true))}</text>`;
+      `<text class="title fade" x="${pad}" y="${pad + fs * 1.3 * 0.8}">${escapeXml(truncate(ctx, shownTitle, cw - pad * 2, fs * 1.3, true))}</text>`;
 
   const anim = o.animate
     ? `@media (prefers-reduced-motion: no-preference) {
@@ -131,7 +146,9 @@ export function frame({ ctx, width, height, title, desc, body, css = "", titleMa
 <rect x="0.5" y="0.5" width="${w - 1}" height="${h - 1}" rx="${r(radius)}" fill="${theme.bg}" fill-opacity="${r(o.bg_opacity / 100)}"${
     o.hide_border ? "" : ` stroke="${theme.border}"`
   }/>
+${dx || dy ? `<g transform="translate(${r(dx)} ${r(dy)})">` : "<g>"}
 ${titleText}
 ${body}
+</g>
 </svg>`;
 }

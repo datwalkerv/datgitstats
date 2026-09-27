@@ -12,6 +12,8 @@ export interface CardTheme {
   ring: string;
   muted: string;
   contrib: [string, string, string, string, string];
+  /** Ordered series colors (e.g. languages), most prominent first. */
+  palette: string[];
 }
 
 export interface ThemeDefinition extends CardTheme {
@@ -24,23 +26,69 @@ const t = (
   id: string,
   label: string,
   dark: boolean,
-  c: Omit<CardTheme, "contrib"> & { contrib?: CardTheme["contrib"] },
+  c: Omit<CardTheme, "contrib" | "palette"> & { contrib?: CardTheme["contrib"] },
 ): ThemeDefinition => ({
   id,
   label,
   dark,
   ...c,
   contrib: c.contrib ?? rampFrom(c.bg, c.accent),
+  palette: PALETTES[id] ?? [c.accent, c.title, c.icon, c.ring],
 });
+
+/**
+ * Hand-picked series palettes drawn from each theme's own color scheme, ordered so
+ * neighbouring entries stay distinguishable.
+ */
+const PALETTES: Record<string, string[]> = {
+  default: ["#58a6ff", "#3fb950", "#d29922", "#f778ba", "#a371f7", "#ff7b72", "#39c5cf", "#e3b341"],
+  "github-dark": ["#2f81f7", "#3fb950", "#d29922", "#db61a2", "#a371f7", "#f85149", "#39c5cf", "#e3b341"],
+  "github-light": ["#0969da", "#1a7f37", "#9a6700", "#bf3989", "#8250df", "#cf222e", "#1b7c83", "#bc4c00"],
+  dracula: ["#bd93f9", "#ff79c6", "#8be9fd", "#50fa7b", "#ffb86c", "#f1fa8c", "#ff5555", "#6272a4"],
+  nord: ["#88c0d0", "#81a1c1", "#a3be8c", "#ebcb8b", "#d08770", "#b48ead", "#5e81ac", "#bf616a"],
+  "tokyo-night": ["#7aa2f7", "#bb9af7", "#7dcfff", "#9ece6a", "#e0af68", "#f7768e", "#73daca", "#ff9e64"],
+  "one-dark": ["#61afef", "#c678dd", "#98c379", "#e5c07b", "#e06c75", "#56b6c2", "#d19a66", "#abb2bf"],
+  monokai: ["#a6e22e", "#f92672", "#66d9ef", "#fd971f", "#ae81ff", "#e6db74", "#f8f8f2", "#75715e"],
+  "catppuccin-mocha": ["#cba6f7", "#89b4fa", "#a6e3a1", "#f9e2af", "#fab387", "#f38ba8", "#94e2d5", "#f5c2e7"],
+  "catppuccin-latte": ["#8839ef", "#1e66f5", "#40a02b", "#df8e1d", "#fe640b", "#d20f39", "#179299", "#ea76cb"],
+  gruvbox: ["#fabd2f", "#fe8019", "#b8bb26", "#83a598", "#d3869b", "#8ec07c", "#fb4934", "#a89984"],
+  "gruvbox-light": ["#b57614", "#af3a03", "#79740e", "#076678", "#8f3f71", "#427b58", "#9d0006", "#7c6f64"],
+  "solarized-dark": ["#268bd2", "#2aa198", "#859900", "#b58900", "#cb4b16", "#d33682", "#6c71c4", "#dc322f"],
+  "solarized-light": ["#268bd2", "#2aa198", "#859900", "#b58900", "#cb4b16", "#d33682", "#6c71c4", "#dc322f"],
+  // IBM + Okabe–Ito colorblind-safe colors.
+  "vision-friendly-dark": ["#648fff", "#ffb000", "#dc267f", "#785ef0", "#fe6100", "#56b4e9", "#009e73", "#f0e442"],
+  midnight: ["#8aa4ff", "#b18aff", "#6fd3ff", "#7ee0b5", "#ffd27a", "#ff8fa3", "#9aa5ce", "#c8d3f5"],
+  amoled: ["#ffffff", "#a3a3a3", "#d4d4d4", "#6b6b6b", "#e8e8e8", "#8a8a8a", "#bdbdbd", "#525252"],
+  minimal: ["#171717", "#737373", "#404040", "#a3a3a3", "#262626", "#8a8a8a", "#525252", "#bdbdbd"],
+  "minimal-dark": ["#fafafa", "#a3a3a3", "#d4d4d4", "#737373", "#e5e5e5", "#8a8a8a", "#bdbdbd", "#5a5a5a"],
+  ocean: ["#5ec8f2", "#2dd4bf", "#818cf8", "#34a0d8", "#a5f3fc", "#38bdf8", "#67e8f9", "#6b8aa8"],
+  forest: ["#8fd694", "#d4c26a", "#5fa86b", "#c5e1a5", "#88c9a1", "#a3b18a", "#6fcf7a", "#e0d8a8"],
+  sunset: ["#ff9a62", "#ff6f91", "#ffc75f", "#c34a8f", "#f9f871", "#d65db1", "#ff8066", "#845ec2"],
+  "rose-pine": ["#ebbcba", "#c4a7e7", "#9ccfd8", "#f6c177", "#eb6f92", "#31748f", "#e0def4", "#908caa"],
+  synthwave: ["#ff7edb", "#72f1b8", "#fede5d", "#f97e72", "#36f9f6", "#fe4450", "#b893ce", "#03edf9"],
+  everforest: ["#a7c080", "#83c092", "#7fbbb3", "#dbbc7f", "#e69875", "#d699b6", "#e67e80", "#9da9a0"],
+  "ayu-light": ["#fa8d3e", "#399ee6", "#86b300", "#a37acc", "#4cbf99", "#f2ae49", "#f07171", "#55b4d4"],
+};
+
+/** Series color i: the palette, then shades of it (mixed toward the background) for longer lists. */
+export function seriesColor(theme: CardTheme, i: number): string {
+  const { palette } = theme;
+  const base = palette[i % palette.length];
+  const round = Math.floor(i / palette.length);
+  if (round === 0) return base;
+  return mixHex(base, theme.bg, Math.min(0.6, 0.3 * round));
+}
+
+export function mixHex(a: string, b: string, w: number): string {
+  const pa = hexToRgb(a);
+  const pb = hexToRgb(b);
+  const ch = (i: number) => Math.round(pa[i] + (pb[i] - pa[i]) * w);
+  return rgbToHex(ch(0), ch(1), ch(2));
+}
 
 /** Builds a 5-step contribution ramp between the background and the accent. */
 function rampFrom(bg: string, accent: string): CardTheme["contrib"] {
-  const mix = (a: string, b: string, w: number) => {
-    const pa = hexToRgb(a);
-    const pb = hexToRgb(b);
-    const ch = (i: number) => Math.round(pa[i] + (pb[i] - pa[i]) * w);
-    return rgbToHex(ch(0), ch(1), ch(2));
-  };
+  const mix = mixHex;
   return [mix(bg, accent, 0.12), mix(bg, accent, 0.35), mix(bg, accent, 0.55), mix(bg, accent, 0.78), accent];
 }
 

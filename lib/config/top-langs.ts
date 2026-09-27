@@ -20,4 +20,5 @@ export const topLangsFields = {
   count_weight: float(0.5, 0, 2, "Repository-count weight for the weighted method."),
   show_percent: bool(true, "Show percentages."),
   show_other: bool(false, "Group the remaining languages as \"Other\"."),
+  lang_colors: enumOf(["theme", "language"] as const, "theme", "theme = colors from the card theme, language = GitHub's language colors."),
 };
