@@ -34,7 +34,7 @@ const FAQ = [
 
 export function Faq() {
   return (
-    <section id="faq" aria-labelledby="faq-heading" className="mx-auto max-w-3xl scroll-mt-20 px-4 sm:px-6">
+    <section id="faq" aria-labelledby="faq-heading" className="mx-auto w-full max-w-3xl scroll-mt-20 px-4 sm:px-6">
       <SectionHeading id="faq-heading" eyebrow="FAQ" title="Questions, answered." />
       <Accordion className="rounded-xl border border-border">
         {FAQ.map((f, i) => (

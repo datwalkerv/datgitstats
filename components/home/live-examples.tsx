@@ -12,7 +12,7 @@ const CARDS = [
 /** Real cards served by this deployment's own API. */
 export function LiveExamples() {
   return (
-    <section aria-labelledby="live-heading" className="mx-auto max-w-6xl px-4 sm:px-6">
+    <section aria-labelledby="live-heading" className="mx-auto w-full max-w-6xl px-4 sm:px-6">
       <h2 id="live-heading" className="sr-only">
         Live example
       </h2>

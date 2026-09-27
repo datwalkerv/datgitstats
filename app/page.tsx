@@ -24,7 +24,7 @@ export default function Home() {
         <ReadmeExample />
         <ApiDocs />
         <Faq />
-        <section className="mx-auto flex max-w-3xl flex-col items-center px-4 text-center">
+        <section className="mx-auto w-full flex max-w-3xl flex-col items-center px-4 text-center">
           <h2 className="text-balance text-3xl font-semibold tracking-[-0.03em]">Make your profile yours.</h2>
           <p className="mt-3 text-muted-foreground">It takes about a minute.</p>
           <Link

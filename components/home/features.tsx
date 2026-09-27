@@ -36,7 +36,7 @@ const FEATURES = [
 
 export function Features() {
   return (
-    <section aria-labelledby="features-heading" className="mx-auto max-w-6xl px-4 sm:px-6">
+    <section aria-labelledby="features-heading" className="mx-auto w-full max-w-6xl px-4 sm:px-6">
       <SectionHeading
         id="features-heading"
         eyebrow="Customization"

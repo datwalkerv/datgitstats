@@ -64,7 +64,7 @@ export function ApiDocs() {
   const origin = siteUrl();
   const commonKeys = new Set(Object.keys(commonFields));
   return (
-    <section id="api" aria-labelledby="api-heading" className="mx-auto max-w-6xl scroll-mt-20 px-4 sm:px-6">
+    <section id="api" aria-labelledby="api-heading" className="mx-auto w-full max-w-6xl scroll-mt-20 px-4 sm:px-6">
       <SectionHeading
         id="api-heading"
         eyebrow="API"

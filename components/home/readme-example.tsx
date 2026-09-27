@@ -11,7 +11,7 @@ export function ReadmeExample() {
   <img src="${origin}/api/streak?username=YOUR_NAME&amp;theme=tokyo-night" />
 </p>`;
   return (
-    <section aria-labelledby="readme-example-heading" className="mx-auto max-w-6xl px-4 sm:px-6">
+    <section aria-labelledby="readme-example-heading" className="mx-auto w-full max-w-6xl px-4 sm:px-6">
       <SectionHeading
         id="readme-example-heading"
         eyebrow="README integration"

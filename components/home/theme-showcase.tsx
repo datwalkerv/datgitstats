@@ -10,7 +10,7 @@ export function ThemeShowcase() {
   }));
 
   return (
-    <section id="themes" aria-labelledby="themes-heading" className="mx-auto max-w-6xl scroll-mt-20 px-4 sm:px-6">
+    <section id="themes" aria-labelledby="themes-heading" className="mx-auto w-full max-w-6xl scroll-mt-20 px-4 sm:px-6">
       <SectionHeading
         id="themes-heading"
         eyebrow="Themes"
